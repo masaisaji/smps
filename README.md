@@ -41,6 +41,19 @@ This library can be used to parse most models from the following archives:
  * [POST](http://users.iems.northwestern.edu/~jrbirge/html/dholmes/post.html)
  * [Andy Felt's collection](http://www4.uwsp.edu/math/afelt/slptestset/download.html).
 
+SMPS consists of the following three files:
+
+1 - `.cor`:
+
+This file is the core of the formulation which is basically derived from the mean value problem. It's format is very similar to _.mps files.
+
+2 - `.tim`
+
+This file contains the information of stages. The name of rows and columns associated with each stage
+
+3 - `.sto`
+
+This file contains the information about the random variables, and their distribution. Also, it shows the place in which the random variables appear in the second stage problem
 ## Example usage
 
 * Parse stochastic model from smps dataset:
