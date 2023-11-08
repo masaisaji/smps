@@ -1,0 +1,12 @@
+LICENSE.md
+README.md
+setup.py
+smps/__init__.py
+smps/read.py
+smps.egg-info/PKG-INFO
+smps.egg-info/SOURCES.txt
+smps.egg-info/dependency_links.txt
+smps.egg-info/requires.txt
+smps.egg-info/top_level.txt
+tests/__init__.py
+tests/test_read.py

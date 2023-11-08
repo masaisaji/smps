@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: smps
+Version: 1.0
+Summary: SMPS files parsing utilities.
+Author: Robin Vujanic
+Author-email: vjc.robin@gmail.com
+License-File: LICENSE.md
+Requires-Dist: decorator
+Requires-Dist: gurobipy
+Requires-Dist: networkx
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: pytest

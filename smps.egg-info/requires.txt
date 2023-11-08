@@ -3,6 +3,5 @@ gurobipy
 networkx
 numpy
 scipy
-pygraphviz
 matplotlib
 pytest

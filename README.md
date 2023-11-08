@@ -10,14 +10,15 @@ processing of large instances. Scenario matrices are generated lazily.
 Requires `gurobipy`. Academic users can obtain free licenses [here](http://www.gurobi.com/academia/for-universities%5D). 
 
 ~~~~
->> git clone https://github.com/robin-vjc/smps
->> cd smps/
->> pip install -e .
+git clone https://github.com/robin-vjc/smps
+cd smps
+sudo apt-get install -y graphviz-dev
+pip install -e .
 ~~~~
 
 Optionally, run tests suite
 ~~~~
->> py.test
+pytest
 ~~~~
 
 

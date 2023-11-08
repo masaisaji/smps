@@ -1,2 +1,11 @@
 from smps.read import StochasticModel
-sm = StochasticModel('./data/siplib/dcap342_200/dcap342_200')
+from time import time
+
+sm = StochasticModel('./data/siplib/dcap342_300/dcap342_300')
+# sm.plot_scenario_tree()  # useelss
+model = sm.generate_deterministic_equivalent()
+model.printStats()
+t0 = time()
+# model.optimize()
+tf = time()
+print('Time: ', tf-t0)

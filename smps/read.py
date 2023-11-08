@@ -5,6 +5,7 @@ import re
 import copy
 from collections import defaultdict, OrderedDict
 
+import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 from scipy.sparse import dok_matrix
@@ -401,8 +402,8 @@ class StochasticModel(object):
                         G.add_edge(parent, node_name)
 
         # nx.draw_graphviz(G, with_labels=True, arrows=True, prog='dot', node_color='black')
-        # node_position = nx.graphviz_layout(G, prog='dot')
-        node_position = nx.pygraphviz_layout(G, prog='dot')
+        node_position = nx.nx_agraph.graphviz_layout(G, prog='dot')
+        # node_position = nx.pygraphviz_layout(G, prog='dot')
         label_position = copy.deepcopy(node_position)
         for p in label_position:
             # Now sure why networkx stores position as a tuple...
@@ -414,6 +415,7 @@ class StochasticModel(object):
                 arrows=True, node_color='red')
         nx.draw_networkx_labels(G, pos=label_position)
         # nx.write_dot(G,'tree_plot.dot')
+        plt.savefig('tree_plot1.png')
 
     def scenario_tree_reduction(self):
         # TODO to be implemented
