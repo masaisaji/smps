@@ -31,6 +31,7 @@ class StochasticModel(object):
     to be present at the location specified in filename (e.g., filename='./data/invest' requires the files
     './data/invest.cor', './data/invest.tim' and './data/invest.sto').
     """
+
     def __init__(self, model_filename):
         # The following dictionaries will be filled with the matrix blocks defining the problem; we handle according to
         # the following notation standard set in the SMPS documentation:
@@ -70,7 +71,7 @@ class StochasticModel(object):
         self.scenarios = OrderedDict()  # OrderedDict of instances of Scenario
         self.periods = []  # list of strings
         self.var_names = []  # var_names = ['Var1','Var2',...]
-        self.constr_names = [] # constr_names = ['Constr1','Constr2',...]
+        self.constr_names = []  # constr_names = ['Constr1','Constr2',...]
         self.objective_name = ''  # label of the objective (string)
         # Record of which variable/constr belongs to which stage. Example:
         # stage_vars = { 1: ['Var1'], 2: ['Var2','Var3'], 3: ['Var4']}
@@ -78,7 +79,8 @@ class StochasticModel(object):
         # stage_constrs = {1: ['Consrt1','Constr2'], 2: ['Constr3'], 3: ['Consrt4','Constr5']}
         self.stage_vars = {}
         self.stage_constrs = {}
-        self.mode_of_modification = 'REPLACE'  # default, possible vaulues supported: ['REPLACE', 'ADD']
+        # default, possible vaulues supported: ['REPLACE', 'ADD']
+        self.mode_of_modification = 'REPLACE'
 
         # Parse nominal model
         self._parse_nominal_model()
@@ -91,20 +93,21 @@ class StochasticModel(object):
         self._parse_stochastic_information()
 
     def _parse_nominal_model(self):
-        print('Parsing nominal model information from ' + self.model_filename + '.cor and .tim ...')
+        print('Parsing nominal model information from ' +
+              self.model_filename + '.cor and .tim ...')
         # rename the .cor file into .mps to have Gurobi read it, as it MUST have the correct ending for it to be parsed
-        os.rename(self.model_filename+'.cor',self.model_filename+'.mps')
+        os.rename(self.model_filename+'.cor', self.model_filename+'.mps')
         self.nominal_model = gb.read(self.model_filename+'.mps')
-        os.rename(self.model_filename+'.mps',self.model_filename+'.cor')
+        os.rename(self.model_filename+'.mps', self.model_filename+'.cor')
 
         # We have to manually parse the .cor file too, because gurobi does not register the label of the objective.. >:(
-        with open(self.model_filename+'.cor', 'r') as f:
+        with open(self.model_filename+'.cor', 'r', encoding='windows-1252') as f:
             current_section = None
             for line in f:
                 # Extract and clean line words
                 line_word = re.split(' |\t', line)
                 line_word = [x.strip() for x in line_word]
-                line_word = filter(None, line_word)
+                line_word = list(filter(None, line_word))
 
                 if line_word:
                     if line_word[0] == 'ROWS':
@@ -122,23 +125,23 @@ class StochasticModel(object):
             # TODO Instead of outputting a warning, transform problem into minimization instead, and make them
             # aware that all the results have a '-' in front when it comes to objectives.
             print('WARNING: The nominal model in the .cor file is defined as a MAXIMIZATION.'
-                   'The decomposition methods assume a MINIMIZATION (the rest should work).')
+                  'The decomposition methods assume a MINIMIZATION (the rest should work).')
 
     def _parse_time_information(self):
         # First open .tim file and get the data
         periods_start_position = []
-        with open(self.model_filename+'.tim', 'r') as f:
+        with open(self.model_filename+'.tim', 'r', encoding='windows-1252') as f:
             for line in f:
                 # Extract and clean line words
                 line_word = re.split(' |\t', line)
                 line_word = [x.strip() for x in line_word]
-                line_word = filter(None, line_word)
+                line_word = list(filter(None, line_word))
 
-                if line_word[0] in ['TIME','PERIODS','ENDATA']:
+                if line_word[0] in ['TIME', 'PERIODS', 'ENDATA']:
                     pass  # just padding lines
                 else:
                     self.periods.append(line_word[2])
-                    periods_start_position.append((line_word[0],line_word[1]))
+                    periods_start_position.append((line_word[0], line_word[1]))
 
         # Then deduce which variables belong to which stage, and which constraints belong to which stage.
         # First, fill list of variables and constraints names
@@ -156,19 +159,23 @@ class StochasticModel(object):
             # first stage is however defined by the var/constr up to the secon entry; the first entry can thus be
             # discarded as it is redundant
             if i > 0:
-                index_of_first_var_of_next_stage = self.var_names.index(periods_start_position[i][0])
-                index_of_first_cstr_of_next_stage = self.constr_names.index(periods_start_position[i][1])
+                index_of_first_var_of_next_stage = self.var_names.index(
+                    periods_start_position[i][0])
+                index_of_first_cstr_of_next_stage = self.constr_names.index(
+                    periods_start_position[i][1])
 
-                self.stage_vars[i] = self.var_names[index_of_first_var_of_this_stage : index_of_first_var_of_next_stage]
-                self.stage_constrs[i] = self.constr_names[index_of_first_cstr_of_this_stage : index_of_first_cstr_of_next_stage]
+                self.stage_vars[i] = self.var_names[index_of_first_var_of_this_stage: index_of_first_var_of_next_stage]
+                self.stage_constrs[i] = self.constr_names[index_of_first_cstr_of_this_stage: index_of_first_cstr_of_next_stage]
 
                 # move forward the indices, to get appropriate slicing
                 index_of_first_var_of_this_stage = index_of_first_var_of_next_stage
                 index_of_first_cstr_of_this_stage = index_of_first_cstr_of_next_stage
 
         # finally append last period
-        self.stage_vars[len(self.periods)] = self.var_names[index_of_first_var_of_this_stage : ]
-        self.stage_constrs[len(self.periods)] = self.constr_names[index_of_first_cstr_of_this_stage : ]
+        self.stage_vars[len(self.periods)
+                        ] = self.var_names[index_of_first_var_of_this_stage:]
+        self.stage_constrs[len(
+            self.periods)] = self.constr_names[index_of_first_cstr_of_this_stage:]
 
         # Recover matrix blocks A[i,j] and b.
         self.A = {}
@@ -181,12 +188,14 @@ class StochasticModel(object):
             # ``for tau in range(t+1):''
             for tau, period_ in enumerate(self.periods):
                 taup = tau+1
-                self.A[tp,taup] = dok_matrix((len(self.stage_constrs[tp]), len(self.stage_vars[taup])), dtype=np.float32)
+                self.A[tp, taup] = dok_matrix(
+                    (len(self.stage_constrs[tp]), len(self.stage_vars[taup])), dtype=np.float32)
                 # fill b[tp] entry - a vector. This should be done outside of this for loop (efficiency), but we
                 # keep it here for code readability (it would be messier to swap the order of the loops).
                 # self.b[tp] = dok_matrix((len(self.stage_constrs[tp]),1), dtype=np.float32)
                 self.b[tp] = np.zeros(len(self.stage_constrs[tp]))
-                self.b_sense[tp] = np.empty((len(self.stage_constrs[tp]),1), dtype=str)
+                self.b_sense[tp] = np.empty(
+                    (len(self.stage_constrs[tp]), 1), dtype=str)
                 self.b_sense[tp][:] = ''
                 # now fill row and columns of the (sparse) matrix contained in A[tp, taup] and b[tp]
                 for row_local_index, row in enumerate(self.stage_constrs[tp]):
@@ -204,11 +213,13 @@ class StochasticModel(object):
                         col = gb_row.getVar(col_index)
                         if col.varName in self.stage_vars[taup]:
                             # we have to create a new local index for the submatrix
-                            col_local_index = self.stage_vars[taup].index(col.varName)
+                            col_local_index = self.stage_vars[taup].index(
+                                col.varName)
                             # OLD: _coeffs was removed in enw version of gurobipy
                             # self.A[tp,taup][row_local_index,col_local_index] = gb_row._coeffs[col_index]
                             # NEW:
-                            self.A[tp,taup][row_local_index,col_local_index] = gb_row.getCoeff(col_index)
+                            self.A[tp, taup][row_local_index,
+                                             col_local_index] = gb_row.getCoeff(col_index)
 
         # fill c, ub, lb, vtype
         for t, period in enumerate(self.periods):
@@ -219,21 +230,28 @@ class StochasticModel(object):
             self.vtype[tp] = np.empty(len(self.stage_vars[tp]), dtype=str)
             self.vtype[tp][:] = ''
             for col_local_index, variable in enumerate(self.stage_vars[tp]):
-                self.c[tp][col_local_index] = self.nominal_model.getVarByName(variable).Obj
-                self.lb[tp][col_local_index] = self.nominal_model.getVarByName(variable).LB
-                self.ub[tp][col_local_index] = self.nominal_model.getVarByName(variable).UB
-                self.vtype[tp][col_local_index] = self.nominal_model.getVarByName(variable).VType
+                self.c[tp][col_local_index] = self.nominal_model.getVarByName(
+                    variable).Obj
+                self.lb[tp][col_local_index] = self.nominal_model.getVarByName(
+                    variable).LB
+                self.ub[tp][col_local_index] = self.nominal_model.getVarByName(
+                    variable).UB
+                self.vtype[tp][col_local_index] = self.nominal_model.getVarByName(
+                    variable).VType
 
     def _parse_stochastic_information(self):
-        print('Parsing stochastic information from '+self.model_filename+'.sto ...')
+        print('Parsing stochastic information from ' +
+              self.model_filename+'.sto ...')
         current_section = None
 
-        with open(self.model_filename+'.sto', 'r') as f:
+        with open(self.model_filename+'.sto', 'r', encoding='windows-1252') as f:
             for l, line in enumerate(f):
                 # Extract and clean line words
-                line_word = re.split(' |\t', line)  # split by whitespace or tab
+                # split by whitespace or tab
+                line_word = re.split(' |\t', line)
                 line_word = [x.strip() for x in line_word]  # remove "\n" etc.
-                line_word = filter(None, line_word)  # remove empty elements in the line_word list
+                # remove empty elements in the line_word list
+                line_word = list(filter(None, line_word))
 
                 # parse to see if it's a section header
                 if line_word[0] == '*':
@@ -246,10 +264,11 @@ class StochasticModel(object):
                     print('Stochastic model is of type SCENARIOS DISCRETE')
                     self.model_type = MODEL_TYPE_SCENARIOS_DISCRETE
                     if len(line_word) > 2:
-                        if line_word[2] in ['ADD','MULTIPLY','REPLACE']:
+                        if line_word[2] in ['ADD', 'MULTIPLY', 'REPLACE']:
                             self.mode_of_modification = line_word[2]
                         else:
-                            print('Non-understood parameter(s) on line {}: {}'.format(l, line_word[3:]))
+                            print(
+                                'Non-understood parameter(s) on line {}: {}'.format(l, line_word[3:]))
                 elif line_word[0] == 'SC':
                     current_section = SECTION_SCENARIO_DATA
                     current_scenario = line_word[1]
@@ -257,7 +276,8 @@ class StochasticModel(object):
                         parent = 'ROOT'
                     else:
                         parent = line_word[2]
-                    self._add_scenario(line_word[1], parent, float(line_word[3]), line_word[4])
+                    self._add_scenario(line_word[1], parent, float(
+                        line_word[3]), line_word[4])
                 elif line_word[0] == 'ENDATA':
                     pass
 
@@ -269,7 +289,8 @@ class StochasticModel(object):
                                                                                float(line_word[2]))
 
         if self.model_type not in ALLOWED_MODEL_TYPES:
-            raise ValueError('Only models of type '+str(ALLOWED_MODEL_TYPES)+' are supported.')
+            raise ValueError('Only models of type ' +
+                             str(ALLOWED_MODEL_TYPES)+' are supported.')
 
     def _add_scenario(self, scenario_id, parent, probability, branch_period):
         """
@@ -280,13 +301,16 @@ class StochasticModel(object):
         :return: None
         """
         if self.model_type != MODEL_TYPE_SCENARIOS_DISCRETE:
-            raise ValueError('This method can only be called on Stochastic Models of type SCENARIOS DISCRETE.')
+            raise ValueError(
+                'This method can only be called on Stochastic Models of type SCENARIOS DISCRETE.')
 
-        self.scenarios[scenario_id] = Scenario(scenario_id, parent, probability, branch_period, self)
+        self.scenarios[scenario_id] = Scenario(
+            scenario_id, parent, probability, branch_period, self)
 
     def generate_deterministic_equivalent(self):
 
-        print('Generating deterministic equivalent for the model {}...'.format(self.nominal_model.ModelName))
+        print('Generating deterministic equivalent for the model {}...'.format(
+            self.nominal_model.ModelName))
         deterministic_equivalent = gb.Model('Deterministic Equivalent')
 
         #####################
@@ -296,21 +320,21 @@ class StochasticModel(object):
         x = {}  # x[stage,'NODE']
         # generate first-stage variables
         for i in range(len(self.c[1])):
-            if (1,'ROOT') not in x.keys():
-                x[1,'ROOT'] = {}
-            x[1,'ROOT'][i] = deterministic_equivalent.addVar(obj=self.c[1][i],
-                                                             lb=self.lb[1][i],
-                                                             ub=self.ub[1][i],
-                                                             vtype=self.vtype[1][i],
-                                                             name='x_t{}_n{}_i{}'.format(1,'ROOT',i))
+            if (1, 'ROOT') not in x.keys():
+                x[1, 'ROOT'] = {}
+            x[1, 'ROOT'][i] = deterministic_equivalent.addVar(obj=self.c[1][i],
+                                                              lb=self.lb[1][i],
+                                                              ub=self.ub[1][i],
+                                                              vtype=self.vtype[1][i],
+                                                              name='x_t{}_n{}_i{}'.format(1, 'ROOT', i))
         deterministic_equivalent.update()
 
         # first stage constraints
         lhs = defaultdict(gb.LinExpr)
-        for entry in self.A[1,1].items():
+        for entry in self.A[1, 1].items():
             row, column = entry[0]
             value = entry[1]
-            lhs[row] = lhs[row] + value*x[1,'ROOT'][column]
+            lhs[row] = lhs[row] + value*x[1, 'ROOT'][column]
 
         for row, value in enumerate(self.b[1]):
             deterministic_equivalent.addConstr(lhs[row], self.b_sense[1][row], self.b[1][row],
@@ -321,36 +345,36 @@ class StochasticModel(object):
             # Contribution to lhs from A[1,1]
             lhs_1 = defaultdict(gb.LinExpr)
 
-            for entry in self.scenarios[scn].A[2,1].items():
+            for entry in self.scenarios[scn].A[2, 1].items():
                 row, column = entry[0]
                 value = entry[1]
-                lhs_1[row] = lhs_1[row] + value*x[1,'ROOT'][column]
+                lhs_1[row] = lhs_1[row] + value*x[1, 'ROOT'][column]
 
             # Contribution from A[2,2]
             lhs_2 = defaultdict(gb.LinExpr)
 
             # generate second stage variables
-            if (2,scn) not in x.keys():
-                x[2,scn] = {}
+            if (2, scn) not in x.keys():
+                x[2, scn] = {}
             for i in range(len(self.c[2])):
-                x[2,scn][i] = deterministic_equivalent.addVar(obj=self.scenarios[scn].c[2][i]*self.scenarios[scn].probability,
-                                                              lb=self.scenarios[scn].lb[2][i],
-                                                              ub=self.scenarios[scn].ub[2][i],
-                                                              vtype=self.scenarios[scn].vtype[2][i],
-                                                              name='x_stage{}_node{}_i{}'.format(2,scn,i))
+                x[2, scn][i] = deterministic_equivalent.addVar(obj=self.scenarios[scn].c[2][i]*self.scenarios[scn].probability,
+                                                               lb=self.scenarios[scn].lb[2][i],
+                                                               ub=self.scenarios[scn].ub[2][i],
+                                                               vtype=self.scenarios[scn].vtype[2][i],
+                                                               name='x_stage{}_node{}_i{}'.format(2, scn, i))
             deterministic_equivalent.update()
 
-            for entry in self.scenarios[scn].A[2,2].items():
+            for entry in self.scenarios[scn].A[2, 2].items():
                 row, column = entry[0]
                 value = entry[1]
-                lhs_2[row] = lhs_2[row] + value*x[2,scn][column]
+                lhs_2[row] = lhs_2[row] + value*x[2, scn][column]
 
             # add constraints to stochastic model
             for row, value in enumerate(self.b[2]):
                 deterministic_equivalent.addConstr(lhs_1[row] + lhs_2[row],
                                                    self.scenarios[scn].b_sense[2][row],
                                                    self.scenarios[scn].b[2][row],
-                                                   name='stage2_sc{}_row{}'.format(scn,row))
+                                                   name='stage2_sc{}_row{}'.format(scn, row))
             deterministic_equivalent.update()
 
         # Set objective to minimize or maximize
@@ -373,10 +397,10 @@ class StochasticModel(object):
                         if genealogy[i-1] == 'ROOT':
                             parent = 'ROOT'
                         else:
-                            parent = '{}_{}'.format(genealogy[i-1],i-1)
-                        G.add_edge(parent,node_name)
+                            parent = '{}_{}'.format(genealogy[i-1], i-1)
+                        G.add_edge(parent, node_name)
 
-        #nx.draw_graphviz(G, with_labels=True, arrows=True, prog='dot', node_color='black')
+        # nx.draw_graphviz(G, with_labels=True, arrows=True, prog='dot', node_color='black')
         # node_position = nx.graphviz_layout(G, prog='dot')
         node_position = nx.pygraphviz_layout(G, prog='dot')
         label_position = copy.deepcopy(node_position)
@@ -386,7 +410,8 @@ class StochasticModel(object):
             # label_position[p][1] += 15
             label_position[p] = tuple(label_position[p])
         # nx.draw_graphviz(G, position, with_labels=False, arrows=True, prog='dot', node_color='black')
-        nx.draw(G, node_position, with_labels=False, arrows=True, node_color='red')
+        nx.draw(G, node_position, with_labels=False,
+                arrows=True, node_color='red')
         nx.draw_networkx_labels(G, pos=label_position)
         # nx.write_dot(G,'tree_plot.dot')
 
@@ -410,12 +435,14 @@ class Scenario(object):
     """
     Stores information related to a single scenario. Manages (lazy) generation of single scenario data matrices.
     """
+
     def __init__(self, scenario_id, parent, probability, branch_period, stochastic_model):
         self.scenario_id = scenario_id
         self.parent = parent
         self.probability = probability
         self.branch_period = branch_period
-        self.stochastic_model = stochastic_model  # a reference to the stochastic model to which the scenario belongs
+        # a reference to the stochastic model to which the scenario belongs
+        self.stochastic_model = stochastic_model
         self.data_modification = {}
 
         # Problem's data modified according to the scenario
@@ -429,20 +456,24 @@ class Scenario(object):
 
         if parent != 'ROOT':
             # if its parent is not the root, we have to inherit the modifications to the model from its parent
-            self.data_modification = copy.deepcopy(stochastic_model.scenarios[parent].data_modification)
+            self.data_modification = copy.deepcopy(
+                stochastic_model.scenarios[parent].data_modification)
             # the remainder of data_modification is carried over while parsing the sto. file in
             # StochasticModel._parse_stochastic_information, through usage of the self.add_data_modification method
 
         # figure out genealogy (i.e., sequence of nodes in the tree)
         if self.parent == 'ROOT':
             # if our parent is root, then the entire tree branch is our own!
-            self.genealogy = [self.scenario_id for x in range(len(stochastic_model.periods))]
+            self.genealogy = [self.scenario_id for x in range(
+                len(stochastic_model.periods))]
             self.genealogy[0] = 'ROOT'
         else:
             # otherwise we have to inherit genealogy from our parent, and append our own modification
             start = stochastic_model.periods.index(branch_period)
-            self.genealogy = copy.deepcopy(stochastic_model.scenarios[parent].genealogy)
-            self.genealogy[start:] = [self.scenario_id for x in range(len(self.genealogy) - start)]
+            self.genealogy = copy.deepcopy(
+                stochastic_model.scenarios[parent].genealogy)
+            self.genealogy[start:] = [
+                self.scenario_id for x in range(len(self.genealogy) - start)]
 
     def add_data_modification(self, position, value):
         """
@@ -476,8 +507,10 @@ class Scenario(object):
             # Check if it's a RHS modification
             if col_label == 'RHS':
                 # find stage i of the modification
-                i = (key for key,value in self.stochastic_model.stage_constrs.items() if row_label in value).next()
-                local_row = self.stochastic_model.stage_constrs[i].index(row_label)
+                i = next((key for key, value in self.stochastic_model.stage_constrs.items(
+                ) if row_label in value), None)
+                local_row = self.stochastic_model.stage_constrs[i].index(
+                    row_label)
                 if self.stochastic_model.mode_of_modification == 'REPLACE':
                     self._b[i][local_row] = value
                 elif self.stochastic_model.mode_of_modification == 'ADD':
@@ -487,8 +520,10 @@ class Scenario(object):
             # Then check if it's a modification in the objective vector
             elif row_label == self.stochastic_model.objective_name:
                 # find stage i of the modification
-                i = (key for key,value in self.stochastic_model.stage_vars.items() if col_label in value).next()
-                local_col = self.stochastic_model.stage_vars[i].index(col_label)
+                i = next((key for key, value in self.stochastic_model.stage_vars.items(
+                ) if col_label in value), None)
+                local_col = self.stochastic_model.stage_vars[i].index(
+                    col_label)
                 if self.stochastic_model.mode_of_modification == 'REPLACE':
                     self._c[i][local_col] = value
                 elif self.stochastic_model.mode_of_modification == 'ADD':
@@ -500,20 +535,26 @@ class Scenario(object):
                 try:
                     # We have to figure out which (i,j) we have to query from A[i,j] to extract the appropriate
                     # sub matrix to modify
-                    i = (key for key,value in self.stochastic_model.stage_constrs.items() if row_label in value).next()
-                    j = (key for key,value in self.stochastic_model.stage_vars.items() if col_label in value).next()
+                    i = next((key for key, value in self.stochastic_model.stage_constrs.items(
+                    ) if row_label in value), None)
+                    j = next((key for key, value in self.stochastic_model.stage_vars.items(
+                    ) if col_label in value), None)
                 except StopIteration:
-                    print('The .sto file is inconsistent with the .cor file: the given label for the row or column \n' \
-                          'at which the scenario modification should take place is not in the list of labels \n' \
+                    print('The .sto file is inconsistent with the .cor file: the given label for the row or column \n'
+                          'at which the scenario modification should take place is not in the list of labels \n'
                           'determined in the .cor file.')
-                local_row = self.stochastic_model.stage_constrs[i].index(row_label)
-                local_col = self.stochastic_model.stage_vars[j].index(col_label)
+                local_row = self.stochastic_model.stage_constrs[i].index(
+                    row_label)
+                local_col = self.stochastic_model.stage_vars[j].index(
+                    col_label)
                 if self.stochastic_model.mode_of_modification == 'REPLACE':
-                    self._A[i,j][local_row, local_col] = value
+                    self._A[i, j][local_row, local_col] = value
                 elif self.stochastic_model.mode_of_modification == 'ADD':
-                    self._A[i,j][local_row, local_col] = self.stochastic_model.A[i,j][local_row, local_col] + value
+                    self._A[i, j][local_row, local_col] = self.stochastic_model.A[i,
+                                                                                  j][local_row, local_col] + value
                 else:
-                    self._A[i,j][local_row, local_col] = self.stochastic_model.A[i,j][local_row, local_col] * value
+                    self._A[i, j][local_row, local_col] = self.stochastic_model.A[i,
+                                                                                  j][local_row, local_col] * value
 
     # Lazy generation of modified matrices, only upon request.
     @property

@@ -3,7 +3,7 @@ import pytest
 from smps.read import StochasticModel
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
-TEST_PATH = THIS_PATH+'./test_datasets/'
+TEST_PATH = THIS_PATH+'/test_datasets/'
 
 
 @pytest.fixture
